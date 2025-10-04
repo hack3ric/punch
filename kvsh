@@ -1,0 +1,29 @@
+#!/bin/sh
+set -e
+
+check_filename() {
+  filename="$(echo "$1" | sed 's/[^a-zA-Z0-9_-]//g')"
+  if [ "$filename" != "$1" ] || [ -z "$1" ]; then
+    exit 3
+  fi
+}
+
+[ "$1" != "-c" ] && exit 1
+
+args=($2)
+
+mkdir -p ~/kvsh
+
+case "${args[0]}" in
+read)
+  check_filename "${args[1]}"
+  cat ~/kvsh/"$filename"
+  ;;
+write)
+  check_filename "${args[1]}"
+  echo "${args[2]}" >~/kvsh/"$filename"
+  ;;
+*)
+  exit 2
+  ;;
+esac
