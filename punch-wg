@@ -51,4 +51,4 @@ set -e
 peer_endpoint="$(ssh "$kvsh_dest" read "$peer_entry")"
 [ ! -z "$peer_endpoint" ] && wg set "$interface" peer "$peer_public_key" endpoint "$peer_endpoint"
 
-log "WireGuard NAT hole punching synchronized: $self_entry::$self_endpoint <=> $peer_entry::$peer_entry"
+log "WireGuard NAT hole punching synchronized: $self_entry::$self_endpoint <=> $peer_entry::$peer_endpoint"
