@@ -32,7 +32,7 @@ if [ -z "$listen_port" ] || [ -z "$last_handshake" ]; then
   exit 1
 fi
 
-idle_seconds="$(("$(date +%s)" - "$last_handshake"))"
+idle_seconds="$(($(date +%s) - last_handshake))"
 [ "$idle_seconds" -lt 150 ] && exit 0
 
 wg set "$interface" listen-port 0
