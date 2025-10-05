@@ -37,6 +37,9 @@ wg set "$interface" listen-port 0
 self_endpoint="$(./stun-client --port "$listen_port")"
 wg set "$interface" listen-port "$listen_port"
 
+# shellcheck disable=SC2029
 [ ! -z "$self_endpoint" ] && ssh "$kvsh_dest" write "$self_entry" "$self_endpoint"
+
+# shellcheck disable=SC2029
 peer_endpoint="$(ssh "$kvsh_dest" read "$peer_entry")"
 [ ! -z "$peer_endpoint" ] && wg set "$interface" peer "$peer_public_key" endpoint "$peer_endpoint"

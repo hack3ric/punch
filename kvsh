@@ -2,6 +2,7 @@
 set -e
 
 check_filename() {
+  # shellcheck disable=SC2001
   filename="$(echo "$1" | sed 's/[^a-zA-Z0-9_-]//g')"
   if [ "$filename" != "$1" ] || [ -z "$1" ]; then
     exit 3
@@ -10,8 +11,7 @@ check_filename() {
 
 [ "$1" != "-c" ] && exit 1
 
-args=($2)
-
+IFS=" " read -r -a args <<< "$2"
 mkdir -p ~/kvsh
 
 case "${args[0]}" in
