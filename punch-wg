@@ -26,7 +26,7 @@ fi
 listen_port="$(wg show "$interface" listen-port)"
 last_handshake="$(wg show "$interface" latest-handshakes | grep "$peer_public_key" | awk '{print $2}')"
 if [ -z "$listen_port" ] || [ -z "$last_handshake" ]; then
-  log "wireguard config incomplete, not running"
+  log "WireGuard config incomplete, not running"
   exit 1
 fi
 
@@ -43,3 +43,5 @@ wg set "$interface" listen-port "$listen_port"
 # shellcheck disable=SC2029
 peer_endpoint="$(ssh "$kvsh_dest" read "$peer_entry")"
 [ ! -z "$peer_endpoint" ] && wg set "$interface" peer "$peer_public_key" endpoint "$peer_endpoint"
+
+log "WireGuard NAT hole punching synchronized"
