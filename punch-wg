@@ -3,12 +3,6 @@ set -e
 
 script_dir=$(dirname "$(readlink -f "$0")")
 
-if [ -f /etc/openwrt_release ]; then
-  alias log="logger -t punch-wg"
-else
-  alias log=">&2 echo"
-fi
-
 if [ $# -lt 5 ]; then
   >&2 echo "usage: punch-wg <interface> <kvsh_dest> <self_entry> <peer_entry> <peer_public_key>"
   exit 1
@@ -20,6 +14,13 @@ self_entry="$3"
 peer_entry="$4"
 peer_public_key="$5"
 
+log() {
+  if [ -f /etc/openwrt_release ]; then
+    logger -t punch-wg "$@"
+  fi
+  >&2 echo "$@"
+}
+
 if ! which python3 >/dev/null; then
   log "python3 not installed, not running"
   exit 1
@@ -28,7 +29,7 @@ fi
 listen_port="$(wg show "$interface" listen-port)"
 last_handshake="$(wg show "$interface" latest-handshakes | grep "$peer_public_key" | awk '{print $2}')"
 if [ -z "$listen_port" ] || [ -z "$last_handshake" ]; then
-  log "WireGuard config incomplete, not running"
+  log WireGuard config incomplete, not running
   exit 1
 fi
 
@@ -50,4 +51,4 @@ set -e
 peer_endpoint="$(ssh "$kvsh_dest" read "$peer_entry")"
 [ ! -z "$peer_endpoint" ] && wg set "$interface" peer "$peer_public_key" endpoint "$peer_endpoint"
 
-log "WireGuard NAT hole punching synchronized"
+log "WireGuard NAT hole punching synchronized: $self_entry::$self_endpoint <=> $peer_entry::$peer_entry"
