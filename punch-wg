@@ -1,0 +1,42 @@
+#!/bin/sh
+set -e
+
+if [ -f /etc/openwrt_release ]; then
+  alias log="logger -t punch-wg"
+else
+  alias log=">&2 echo"
+fi
+
+if [ $# -lt 5 ]; then
+  >&2 echo "usage: punch-wg <interface> <kvsh_dest> <self_entry> <peer_entry> <peer_public_key>"
+  exit 1
+fi
+
+interface="$1"
+kvsh_dest="$2"
+self_entry="$3"
+peer_entry="$4"
+peer_public_key="$5"
+
+if ! which python3 >/dev/null; then
+  log "python3 not installed, not running"
+  exit 1
+fi
+
+listen_port="$(wg show "$interface" listen-port)"
+last_handshake="$(wg show "$interface" latest-handshakes | grep "$peer_public_key" | awk '{print $2}')"
+if [ -z "$listen_port" ] || [ -z "$last_handshake" ]; then
+  log "wireguard config incomplete, not running"
+  exit 1
+fi
+
+idle_seconds="$(("$(date +%s)" - "$last_handshake"))"
+[ "$idle_seconds" -lt 150 ] && exit 0
+
+wg set "$interface" listen-port 0
+self_endpoint="$(./stun-client --port "$listen_port")"
+wg set "$interface" listen-port "$listen_port"
+
+[ ! -z "$self_endpoint" ] && ssh "$kvsh_dest" write "$self_entry" "$self_endpoint"
+peer_endpoint="$(ssh "$kvsh_dest" read "$peer_entry")"
+[ ! -z "$peer_endpoint" ] && wg set "$interface" peer "$peer_public_key" endpoint "$peer_endpoint"
