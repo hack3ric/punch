@@ -4,7 +4,7 @@ set -e
 script_dir=$(dirname "$(readlink -f "$0")")
 
 if [ $# -lt 5 ]; then
-  >&2 echo "usage: punch-wg <interface> <kvsh_dest> <self_entry> <peer_entry> <peer_public_key>"
+  >&2 echo "usage: punch-wg <interface> <kvsh_dest> <self_entry> <peer_entry> <peer_public_key> [...stun-client options]"
   exit 1
 fi
 
@@ -13,6 +13,7 @@ kvsh_dest="$2"
 self_entry="$3"
 peer_entry="$4"
 peer_public_key="$5"
+shift 5
 
 log() {
   if [ -f /etc/openwrt_release ]; then
@@ -38,7 +39,7 @@ idle_seconds="$(($(date +%s) - last_handshake))"
 
 wg set "$interface" listen-port 0
 set +e
-self_endpoint="$("$script_dir"/stun-client --port "$listen_port")"
+self_endpoint="$("$script_dir"/stun-client --port "$listen_port" "$@")"
 stun_client_result="$?"
 wg set "$interface" listen-port "$listen_port"
 set -e
