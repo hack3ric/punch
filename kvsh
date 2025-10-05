@@ -17,7 +17,7 @@ mkdir -p ~/kvsh
 case "${args[0]}" in
 read)
   check_filename "${args[1]}"
-  cat ~/kvsh/"$filename"
+  cat ~/kvsh/"$filename" 2>/dev/null || :
   ;;
 write)
   check_filename "${args[1]}"
