@@ -18,6 +18,7 @@ def simple_stun(
     client_port=0,
     retries=3,
     timeout=1,
+    fwmark=None,
 ) -> Optional[tuple[str, int]]:
   msg_type = 0x0001
   msg_len = 0
@@ -27,6 +28,8 @@ def simple_stun(
 
   for attempt in range(1, retries + 1):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    if fwmark is not None:
+      sock.setsockopt(socket.SOL_SOCKET, 36, fwmark)
 
     if client_port != 0:
       try:
@@ -63,22 +66,23 @@ def simple_stun(
           f"attempt {attempt} timed out on {server}:{server_port}, retrying...")
     except Exception as e:
       eprint(f"error on attempt {attempt} with {server}:{server_port}: {e}")
-      break
+      return None
     finally:
       sock.close()
 
     time.sleep(0.5)
 
-  eprint("STUN request failed on all addresses after retries")
+  eprint(f"STUN request failed on {server}:{server_port} after retries")
   return None
 
 
-if __name__ == '__main__':
-  import argparse
+if __name__ == "__main__":
+  from argparse import ArgumentParser
 
-  parser = argparse.ArgumentParser()
+  parser = ArgumentParser()
   parser.add_argument("--server", action="extend", nargs=1)
   parser.add_argument("--port")
+  parser.add_argument("--fwmark")
   args = parser.parse_args()
 
   default_servers = [("stun.cloudflare.com", 3478),
@@ -86,10 +90,11 @@ if __name__ == '__main__':
   servers = default_servers if args.server is None else [(server, int(server_port_str)) for [server, server_port_str]
                                                          in map(lambda x: x.rsplit(":", 1), args.server)]
   port = 0 if args.port is None else int(args.port)
+  fwmark = None if args.fwmark is None else int(args.fwmark)
 
   for (server, server_port) in servers:
     eprint(f"trying {server}:{server_port}")
-    result = simple_stun(server, server_port, client_port=port)
+    result = simple_stun(server, server_port, client_port=port, fwmark=fwmark)
     if result is not None:
       ip, port = result
       print(f"{ip}:{port}")
