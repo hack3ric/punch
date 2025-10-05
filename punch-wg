@@ -36,8 +36,12 @@ idle_seconds="$(($(date +%s) - last_handshake))"
 [ "$idle_seconds" -lt 150 ] && exit 0
 
 wg set "$interface" listen-port 0
+set +e
 self_endpoint="$("$script_dir"/stun-client --port "$listen_port")"
+stun_client_result="$?"
 wg set "$interface" listen-port "$listen_port"
+set -e
+[ "$stun_client_result" -ne 0 ] && exit "$stun_client_result"
 
 # shellcheck disable=SC2029
 [ ! -z "$self_endpoint" ] && ssh "$kvsh_dest" write "$self_entry" "$self_endpoint"
