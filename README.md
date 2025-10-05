@@ -22,8 +22,10 @@ My NAT hole punching scripts, consisting of the following:
   $ ./stun-client [--server <host:port> ...] [--port <port>]
   ```
 
-- **punch-wg**: Hole punching script for WireGuard
+- **punch-wg**: Hole punching script for WireGuard. Requires a kvsh instance as signaling server that stores peers' public IP and port.
 
   ```console
   # ./punch-wg <interface> <username>@<host> <self_entry> <peer_entry> <peer_public_key>
   ```
+
+  Don't forget to add kvsh host to ~/.ssh/known_hosts and client SSH key to kvsh host's ~/.ssh/authorized_keys, so that the script can run automatically.
