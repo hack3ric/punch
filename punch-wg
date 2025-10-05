@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+script_dir=$(dirname "$(readlink -f "$0")")
+
 if [ -f /etc/openwrt_release ]; then
   alias log="logger -t punch-wg"
 else
@@ -34,7 +36,7 @@ idle_seconds="$(("$(date +%s)" - "$last_handshake"))"
 [ "$idle_seconds" -lt 150 ] && exit 0
 
 wg set "$interface" listen-port 0
-self_endpoint="$(./stun-client --port "$listen_port")"
+self_endpoint="$("$script_dir"/stun-client --port "$listen_port")"
 wg set "$interface" listen-port "$listen_port"
 
 # shellcheck disable=SC2029
