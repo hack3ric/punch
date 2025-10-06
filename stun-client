@@ -15,10 +15,11 @@ def eprint(s: str):
 def simple_stun(
     server,
     server_port,
+    fwmark=None,
     client_port=0,
     retries=3,
     timeout=1,
-    fwmark=None,
+    tcp=False,
 ) -> Optional[tuple[str, int]]:
   msg_type = 0x0001
   msg_len = 0
@@ -27,23 +28,28 @@ def simple_stun(
   request = struct.pack('!HHI12s', msg_type, msg_len, magic, txn_id)
 
   for attempt in range(1, retries + 1):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock = socket.socket(
+        socket.AF_INET, socket.SOCK_STREAM if tcp else socket.SOCK_DGRAM)
     if fwmark is not None:
       sock.setsockopt(socket.SOL_SOCKET, 36, fwmark)
+
+    if tcp:
+      sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     if client_port != 0:
       try:
         sock.bind(("", client_port))
       except OSError as e:
         eprint(f"could not bind to port {client_port}: {e}")
-        continue
+        break
     sock.settimeout(timeout)
+
+    if tcp:
+      sock.connect((server, server_port))
 
     try:
       sock.sendto(request, (server, server_port))
       data, _ = sock.recvfrom(2048)
-      sock.close()
-
       offset = 20
       while offset < len(data) - 4:
         attr_type, attr_len = struct.unpack('!HH', data[offset:offset+4])
@@ -83,6 +89,7 @@ if __name__ == "__main__":
   parser.add_argument("--server", action="extend", nargs=1)
   parser.add_argument("--port")
   parser.add_argument("--fwmark")
+  parser.add_argument("--tcp", action="store_true")
   args = parser.parse_args()
 
   default_servers = [("stun.cloudflare.com", 3478),
@@ -94,7 +101,7 @@ if __name__ == "__main__":
 
   for (server, server_port) in servers:
     eprint(f"trying {server}:{server_port}")
-    result = simple_stun(server, server_port, client_port=port, fwmark=fwmark)
+    result = simple_stun(server, server_port, client_port=port, fwmark=fwmark, tcp=args.tcp)
     if result is not None:
       ip, port = result
       print(f"{ip}:{port}")
